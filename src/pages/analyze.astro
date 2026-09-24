@@ -1,0 +1,14 @@
+---
+import AnalyzerApp from '@/components/analyzer/AnalyzerApp';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+const title = 'Android Bugreport Analyzer – DroidDiagnostics';
+const description = 'Analyze Android bugreport.zip and text diagnostic files locally for reboot, ANR, crash, kernel, biometric, display, thermal, and boot evidence.';
+---
+<BaseLayout {title} {description}>
+  <section class="content-page">
+    <div class="shell">
+      <header class="content-header"><span class="kicker">Free local analyzer</span><h1>Android Bugreport Analyzer</h1><p>Drop the diagnostic archive below. DroidDiagnostics reads selected text evidence in a Web Worker and does not upload the source file.</p></header>
+      <AnalyzerApp client:load />
+    </div>
+  </section>
+</BaseLayout>

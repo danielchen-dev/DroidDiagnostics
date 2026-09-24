@@ -1,0 +1,8 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+const title = 'Privacy – DroidDiagnostics';
+const description = 'How DroidDiagnostics handles diagnostic files, anonymous product analytics, network identifiers, and engineering review requests.';
+---
+<BaseLayout {title} {description}>
+  <section class="content-page"><div class="shell"><header class="content-header"><span class="kicker">Privacy</span><h1>Your diagnostic file stays in your browser.</h1><p>The MVP is deliberately designed so uploaded-to-the-page Android diagnostic files are parsed locally rather than sent to the DroidDiagnostics backend.</p></header><section class="card prose-card"><h2>Diagnostic files</h2><p>Files selected in the analyzer are processed by browser-side JavaScript and a Web Worker. The analytics endpoint receives product events such as analysis started or completed, but it does not receive diagnostic text, filenames, evidence lines, or file contents.</p></section><section class="card prose-card"><h2>Anonymous analytics</h2><p>The site creates an anonymous visitor ID in local storage and a session ID in session storage. The backend may transform the request IP into a daily rotating HMAC value for approximate unique-network counts. The raw IP is not written into the application database or Analytics Engine dataset by this code.</p></section><section class="card prose-card"><h2>Engineering requests</h2><p>If you submit the engineering-review form, the provided email, company name if supplied, issue type, message, source page, and anonymous visitor ID may be stored so the request can be handled.</p></section></div></section>
+</BaseLayout>

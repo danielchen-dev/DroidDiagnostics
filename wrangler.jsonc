@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "droiddiagnostics",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-09-24",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "droiddiagnostics",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "droiddiagnostics_events"
+    }
+  ],
+  "vars": {
+    "SITE_URL": "https://droiddiagnostics.example.com",
+    "ANALYTICS_DATASET": "droiddiagnostics_events"
+  }
+}

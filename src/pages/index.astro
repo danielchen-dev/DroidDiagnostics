@@ -1,0 +1,71 @@
+---
+import AnalyzerApp from '@/components/analyzer/AnalyzerApp';
+import { diagnosticPages } from '@/content/diagnostics';
+import { guidePages } from '@/content/guides';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const title = 'DroidDiagnostics – Private Android Bugreport Analyzer';
+const description = 'Analyze Android bugreport files for reboots, ANRs, crashes, kernel faults, fingerprint, display, thermal, and boot problems. Files stay in your browser.';
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'DroidDiagnostics',
+    url: Astro.site,
+    description,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'DroidDiagnostics Android Bugreport Analyzer',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Web',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description,
+  },
+];
+---
+<BaseLayout {title} {description} {jsonLd}>
+  <section class="hero">
+    <div class="shell">
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Private browser-side diagnostics</div>
+      <h1>Find the signal inside an Android bugreport.</h1>
+      <p class="hero-lead">Detect reboot, ANR, crash, kernel, fingerprint, display, thermal, and boot-failure evidence without uploading your diagnostic archive.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="#analyzer">Analyze bugreport</a>
+        <a class="button" href="#diagnostics">Browse diagnostic tools</a>
+      </div>
+      <div class="trust-row">
+        <span>No account</span><span>No file upload</span><span>Free MVP</span><span>Android 10–16 oriented</span>
+      </div>
+      <div class="feature-strip">
+        <div><strong>Local analysis</strong><span>Diagnostic content remains in the browser.</span></div>
+        <div><strong>Evidence first</strong><span>Every finding points back to matching source lines.</span></div>
+        <div><strong>Cross-subsystem</strong><span>Framework, HAL, kernel, display, biometric, and thermal signals.</span></div>
+        <div><strong>Exportable</strong><span>Generate a plain-text engineering report.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="analyzer" class="section">
+    <div class="shell"><AnalyzerApp client:load /></div>
+  </section>
+
+  <section id="diagnostics" class="section">
+    <div class="shell">
+      <div class="section-head"><span class="kicker">Problem-focused tools</span><h2>Start from the symptom you actually have.</h2><p>Each diagnostic page explains the failure class and opens the same local analyzer with the relevant subsystem prioritized.</p></div>
+      <div class="grid grid-3">
+        {diagnosticPages.map((page) => <a class="card card-pad link-card" href={`/${page.slug}`}><h3>{page.h1}</h3><p>{page.description}</p><span class="arrow">Open analyzer →</span></a>)}
+      </div>
+    </div>
+  </section>
+
+  <section id="guides" class="section">
+    <div class="shell">
+      <div class="section-head"><span class="kicker">Diagnostic knowledge base</span><h2>Debug the failure, not the noise.</h2><p>Practical Android/AOSP debugging guides built around incident timelines, evidence quality, and subsystem boundaries.</p></div>
+      <div class="grid grid-2">
+        {guidePages.map((guide) => <a class="card card-pad link-card" href={`/guides/${guide.slug}`}><h3>{guide.heading}</h3><p>{guide.description}</p><span class="arrow">Read guide →</span></a>)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

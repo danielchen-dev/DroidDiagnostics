@@ -1,0 +1,10 @@
+---
+import ContactForm from '@/components/ContactForm';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+const title = 'Android / AOSP Engineering Review – DroidDiagnostics';
+const description = 'Request manual review for Android reboots, ANRs, crashes, kernel, BSP, fingerprint, display, and AOSP system problems.';
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+---
+<BaseLayout {title} {description}>
+  <section class="content-page"><div class="shell"><header class="content-header"><span class="kicker">Manual engineering review</span><h1>When pattern matching is not enough.</h1><p>Use this form for incidents that need source-level Android/AOSP, HAL, BSP, kernel, or cross-subsystem investigation. Do not paste private bugreport contents into the form.</p></header><ContactForm client:load turnstileSiteKey={siteKey} />{siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}</div></section>
+</BaseLayout>

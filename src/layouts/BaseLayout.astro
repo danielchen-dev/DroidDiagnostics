@@ -1,0 +1,75 @@
+---
+import AnalyticsBeacon from '@/components/AnalyticsBeacon.astro';
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+}
+
+const { title, description, canonicalPath = Astro.url.pathname, noindex = false, jsonLd } = Astro.props;
+const canonical = new URL(canonicalPath, Astro.site ?? Astro.url.origin).toString();
+const siteName = 'DroidDiagnostics';
+const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION ?? '';
+const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION ?? '';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b1220" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+    {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>}
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="/" aria-label="DroidDiagnostics home">
+          <span class="brand-mark">D</span>
+          <span>DroidDiagnostics</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/analyze">Analyzer</a>
+          <a href="/#diagnostics">Diagnostics</a>
+          <a href="/#guides">Guides</a>
+          <a href="/contact">Engineering Review</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div>
+          <div class="brand footer-brand"><span class="brand-mark">D</span><span>DroidDiagnostics</span></div>
+          <p>Private, browser-side Android diagnostic analysis.</p>
+        </div>
+        <div class="footer-links">
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/contact">Contact</a>
+        </div>
+      </div>
+    </footer>
+    <AnalyticsBeacon />
+  </body>
+</html>

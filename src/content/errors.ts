@@ -1,0 +1,17 @@
+export interface ErrorReference {
+  slug: string;
+  title: string;
+  description: string;
+  signature: string;
+  meaning: string;
+  nextSteps: string[];
+}
+
+export const errorReferences: ErrorReference[] = [
+  { slug: 'system-server-watchdog', title: 'Android system_server Watchdog Timeout', description: 'What system_server watchdog evidence means and what to inspect next.', signature: 'WATCHDOG / system_server timeout / WATCHDOG KILLING SYSTEM PROCESS', meaning: 'A critical system thread or monitored service failed to make progress within the watchdog deadline. The watchdog is usually the recovery mechanism, not automatically the root cause.', nextSteps: ['Inspect the first blocked or overdue monitor.', 'Check binder, lock, storage, and kernel stalls.', 'Correlate display and vendor service failures immediately before the watchdog.'] },
+  { slug: 'fatal-signal-native-crash', title: 'Android Fatal Signal Native Crash', description: 'How to interpret fatal signal records in Android native crashes.', signature: 'Fatal signal 6 / 11 and tombstone backtrace', meaning: 'A native process received a fatal signal. Signal type, fault address, abort message, and symbolized stack determine the useful next step.', nextSteps: ['Identify process and thread.', 'Use symbols from the exact build.', 'Check for earlier vendor/HAL errors that triggered the crash.'] },
+  { slug: 'input-dispatching-timed-out', title: 'Android Input Dispatching Timed Out', description: 'What input dispatch timeout ANRs mean and how to investigate them.', signature: 'Input dispatching timed out', meaning: 'The focused application or window did not complete input processing within the allowed time. Main-thread blockage is common, but system pressure can also contribute.', nextSteps: ['Inspect the app main thread.', 'Check lock and binder waits.', 'Review CPU and system-service pressure at the same timestamp.'] },
+  { slug: 'fingerprint-hw-unavailable', title: 'Android Fingerprint HW_UNAVAILABLE', description: 'Understanding fingerprint hardware unavailable errors in Android.', signature: 'HW_UNAVAILABLE / fingerprint hardware unavailable', meaning: 'The biometric framework cannot currently use the fingerprint hardware path. The reason can be transient service state, HAL failure, vendor process death, or hardware communication.', nextSteps: ['Check HAL and binder lifecycle.', 'Look for vendor fingerprint service restarts.', 'For UDFPS, inspect display/HBM coordination.'] },
+  { slug: 'surfaceflinger-unresponsive', title: 'Android SurfaceFlinger Unresponsive', description: 'How to investigate SurfaceFlinger stalls and display pipeline failures.', signature: 'SurfaceFlinger unresponsive / composer error', meaning: 'The system compositor or a dependency is not progressing normally. The issue may be userspace composition, vendor composer, binder, or kernel display driver related.', nextSteps: ['Check composer service health.', 'Correlate with kernel DRM/display logs.', 'Check whether a watchdog or biometric failure follows.'] },
+  { slug: 'thermal-shutdown', title: 'Android Thermal Shutdown', description: 'Recognize thermal emergency and shutdown evidence in Android logs.', signature: 'thermal shutdown / THERMAL_EMERGENCY / critical temperature', meaning: 'Thermal policy reached a critical condition and may have initiated shutdown or aggressive mitigation.', nextSteps: ['Identify the thermal zone.', 'Correlate with workload and charging.', 'Confirm restart evidence rather than relying on temperature alone.'] },
+];

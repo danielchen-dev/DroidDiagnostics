@@ -1,0 +1,10 @@
+[ro.product.model]: [DemoDevice]
+[ro.product.manufacturer]: [DemoVendor]
+[ro.build.version.release]: [16]
+[ro.build.version.sdk]: [36]
+[ro.build.id]: [DEMO.2026.09]
+[ro.boot.bootreason]: [watchdog]
+09-24 10:10:10.111  1000  1000 E Watchdog: WATCHDOG KILLING SYSTEM PROCESS: Blocked in monitor
+09-24 10:10:10.222  1000  1000 E SurfaceFlinger: composer service died, display error
+09-24 10:10:10.333  1000  1000 E FingerprintService: fingerprint HAL died: HW_UNAVAILABLE
+09-24 10:10:10.444  1000  1000 E kernel: Kernel panic - not syncing: fatal exception

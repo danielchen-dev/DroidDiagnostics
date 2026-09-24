@@ -1,0 +1,19 @@
+---
+import { guidePages } from '@/content/guides';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+export function getStaticPaths() { return guidePages.map((guide) => ({ params: { slug: guide.slug }, props: { guide } })); }
+const { guide } = Astro.props;
+const jsonLd = {
+  '@context': 'https://schema.org', '@type': 'TechArticle', headline: guide.heading,
+  description: guide.description, author: { '@type': 'Organization', name: 'DroidDiagnostics' },
+};
+---
+<BaseLayout title={guide.title} description={guide.description} jsonLd={jsonLd}>
+  <article class="content-page">
+    <div class="shell">
+      <header class="content-header"><span class="kicker">Android debugging guide</span><h1>{guide.heading}</h1><p>{guide.summary}</p></header>
+      {guide.sections.map((section) => <section class="card prose-card"><h2>{section.heading}</h2><p>{section.body}</p></section>)}
+      <div class="hero-actions" style="justify-content:flex-start"><a class="button button-primary" href="/analyze">Analyze a bugreport</a><a class="button" href="/contact">Request engineering review</a></div>
+    </div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,6 @@
+ADMIN_PASSWORD=change-me
+ADMIN_SESSION_SECRET=replace-with-a-long-random-secret
+ANALYTICS_HMAC_SECRET=replace-with-another-long-random-secret
+CLOUDFLARE_ACCOUNT_ID=
+ANALYTICS_API_TOKEN=
+TURNSTILE_SECRET_KEY=

@@ -1,0 +1,9 @@
+---
+import AdminDashboard from '@/components/AdminDashboard';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+const title = 'Admin – DroidDiagnostics';
+const description = 'Private DroidDiagnostics product and traffic dashboard.';
+---
+<BaseLayout {title} {description} noindex>
+  <section class="content-page"><div class="shell"><AdminDashboard client:load /></div></section>
+</BaseLayout>

@@ -1,0 +1,33 @@
+---
+import AnalyzerApp from '@/components/analyzer/AnalyzerApp';
+import { diagnosticPages } from '@/content/diagnostics';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export function getStaticPaths() {
+  return diagnosticPages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: page.h1,
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Web',
+  description: page.description,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+<BaseLayout title={page.title} description={page.description} jsonLd={jsonLd}>
+  <section class="content-page">
+    <div class="shell">
+      <header class="content-header"><span class="kicker">Android diagnostics</span><h1>{page.h1}</h1><p>{page.intro}</p></header>
+      <AnalyzerApp client:load focusCategory={page.category} />
+      <div class="section grid grid-3">
+        <section class="card prose-card"><h2>Common symptoms</h2><ul>{page.symptoms.map((item: string) => <li>{item}</li>)}</ul></section>
+        <section class="card prose-card"><h2>What it detects</h2><ul>{page.detects.map((item: string) => <li>{item}</li>)}</ul></section>
+        <section class="card prose-card"><h2>What to check next</h2><ul>{page.checks.map((item: string) => <li>{item}</li>)}</ul></section>
+      </div>
+      <div class="callout">Automated signatures are triage evidence, not proof of root cause. Confirm important findings against the full incident timeline and matching device build.</div>
+    </div>
+  </section>
+</BaseLayout>
