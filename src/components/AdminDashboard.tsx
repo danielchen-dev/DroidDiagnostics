@@ -80,6 +80,11 @@ export default function AdminDashboard() {
     );
   }
 
+  const logout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+    setAuthenticated(false);
+  };
+
   const eventValue = (name: string) => metrics.events.find((event) => event.event === name)?.total ?? 0;
   const starts = eventValue('analysis_started');
   const completes = eventValue('analysis_completed');
@@ -89,7 +94,7 @@ export default function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-toolbar">
         <div><span className="kicker">Last 24 hours</span><h1>DroidDiagnostics Admin</h1></div>
-        <button className="button" type="button" onClick={() => void load()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</button>
+        <div className="admin-actions"><button className="button" type="button" onClick={() => void load()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</button><button className="button" type="button" onClick={() => void logout()}>Logout</button></div>
       </div>
       {error && <div className="analysis-error">{error}</div>}
       {metrics.warning && <div className="analysis-warning">{metrics.warning}</div>}

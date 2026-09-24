@@ -1,107 +1,212 @@
+export interface GuideSection {
+  heading: string;
+  body: string;
+  commands?: string[];
+  notes?: string[];
+}
+
 export interface GuidePage {
   slug: string;
   title: string;
   description: string;
   heading: string;
   summary: string;
-  sections: Array<{ heading: string; body: string }>;
+  sections: GuideSection[];
+  relatedDiagnostic?: string;
 }
 
 export const guidePages: GuidePage[] = [
   {
     slug: 'how-to-capture-android-bugreport',
-    title: 'How to Capture an Android Bugreport for Debugging',
-    description: 'Practical guide to collecting Android bugreport data and preserving useful evidence for crash, reboot, ANR, and system debugging.',
+    title: 'How to Capture an Android Bugreport for Real Debugging',
+    description: 'Collect Android bugreport.zip close to the incident and preserve ANR, tombstone, kernel and BatteryStats evidence.',
     heading: 'How to Capture an Android Bugreport',
-    summary: 'A useful bugreport must be collected close to the failure. Waiting too long can push important log buffers out of the capture.',
+    summary: 'The quality of the investigation is capped by the quality and timing of the capture. Preserve the original ZIP and note the incident time before opening an editor or deleting anything.',
+    relatedDiagnostic: '/analyze',
     sections: [
-      { heading: 'Capture close to the incident', body: 'Reproduce the problem when safe, note the approximate time, and capture the bugreport as soon as practical. Exact timing makes event correlation much more reliable.' },
-      { heading: 'Keep the original archive', body: 'Do not manually edit the source archive before analysis. Preserve the original file and make redacted copies only when sharing outside your organization.' },
-      { heading: 'Add reproduction context', body: 'Record what the user was doing, whether the screen was on, whether charging or radio activity was involved, and whether the issue recovered without a full restart.' },
+      {
+        heading: 'Capture the ZIP, not a copied terminal screen',
+        body: 'On modern Android, adb bugreport produces a ZIP whose main text report is accompanied by extra files such as historical ANRs, tombstones and selected filesystem artifacts. Those side files may contain the evidence that never appears in normal logcat.',
+        commands: ['adb bugreport bugreport.zip'],
+      },
+      {
+        heading: 'Capture close to the incident',
+        body: 'Write down the approximate wall-clock time and what the user was doing. Log buffers rotate, services restart and a second failure can hide the first. For intermittent issues, a capture taken minutes after reproduction is substantially more useful than one taken the next day.',
+        notes: ['Keep timezone and device clock in mind when correlating external events.', 'If a reboot occurred, previous-boot pstore/ramoops may be more important than current logcat.'],
+      },
+      {
+        heading: 'Preserve the original archive',
+        body: 'Keep an untouched copy. If the report must be shared, create a redacted copy instead of editing the only original. Build fingerprint, kernel build, timestamps and complete crash context are frequently needed to match source and symbols.',
+      },
     ],
   },
   {
     slug: 'how-to-read-android-bugreport',
-    title: 'How to Read an Android Bugreport Without Getting Lost',
-    description: 'Learn a practical order for reading Android bugreports: establish time, device metadata, symptoms, subsystem evidence, and correlation.',
+    title: 'How to Read an Android Bugreport Without Chasing Noise',
+    description: 'A practical reading order for Android bugreports: build identity, incident time, source sections, timeline and cross-subsystem evidence.',
     heading: 'How to Read an Android Bugreport',
-    summary: 'Do not start by grepping random error strings. Establish the incident time and failure class first, then narrow the subsystem.',
+    summary: 'A bugreport contains thousands of warnings that are harmless outside their context. Start with the incident and move backward to the first abnormal event instead of counting lines containing “error”.',
+    relatedDiagnostic: '/analyze',
     sections: [
-      { heading: 'Start with the incident', body: 'Define the symptom and approximate time. A bugreport contains many harmless warnings, so an error without temporal or subsystem context is weak evidence.' },
-      { heading: 'Check device and build identity', body: 'Confirm Android version, build fingerprint, kernel version, and vendor build before comparing behavior with source or symbols.' },
-      { heading: 'Build a timeline', body: 'Move backward from the visible failure to the earliest abnormal event. Later messages are often consequences rather than causes.' },
+      { heading: 'Confirm build identity first', body: 'Record Android release, SDK, build fingerprint, build ID, build type, security patch and kernel. Native symbolization and many vendor behaviors are build-specific.' },
+      { heading: 'Use section boundaries', body: 'The main report is generated by dumpstate and includes recognizable blocks such as system/event/radio logs, kernel/dmesg, memory/PSI, process state and dumpsys output. Treat each section as a different evidence source rather than one giant text file.' },
+      { heading: 'Build a failure timeline', body: 'Start at the visible symptom, then move backward. A SurfaceFlinger timeout after a storage stall may be a consequence; a binder failure after a service tombstone may be a consequence. Root-cause work is about ordering.' },
+    ],
+  },
+  {
+    slug: 'android-bugreport-zip-structure',
+    title: 'Android bugreport.zip Structure and Main Entry Guide',
+    description: 'Understand version.txt, main-entry.txt, FS/ artifacts, ANRs, tombstones and the main dumpstate text inside modern Android bugreport ZIPs.',
+    heading: 'Android bugreport.zip Structure',
+    summary: 'Modern bugreports are containers, not just logcat exports. The main text entry gives broad system state while separate ZIP entries preserve artifacts that are better analyzed independently.',
+    relatedDiagnostic: '/analyze',
+    sections: [
+      { heading: 'version.txt and main-entry.txt', body: 'AOSP bugreport format defines metadata entries that identify the format version and the main flat-text entry. DroidDiagnostics reads these metadata files when present and marks the declared main entry.' },
+      { heading: 'FS/ entries', body: 'dumpstate can copy files from the device filesystem into the ZIP under FS/. Current AOSP also adds historical ANR data and tombstones as separate entries. Never assume the main text file is complete.' },
+      { heading: 'Why parsers should be section-aware', body: 'The same word can mean different things in logcat, kernel output, dumpsys or a tombstone. Source and section identity reduce false positives and make evidence reproducible.' },
     ],
   },
   {
     slug: 'android-reboot-reason-debugging',
-    title: 'Android Reboot Reason Debugging Guide',
-    description: 'Understand how to use Android boot reason, watchdog, kernel, thermal, and framework evidence to investigate unexpected restarts.',
-    heading: 'Debugging Android Reboot Reasons',
-    summary: 'A boot reason string is useful, but it is not enough by itself. Vendor implementations vary, and the reason should be verified against surrounding evidence.',
+    title: 'Android Unexpected Reboot and Watchdog Debugging Guide',
+    description: 'Investigate Android reboot reasons using watchdog, shutdown checkpoints, pstore/ramoops, kernel panic and boot-reason metadata.',
+    heading: 'Debugging Unexpected Android Reboots',
+    summary: 'Do not equate the last reboot line with the cause. Separate orderly reboot, system_server watchdog recovery and abrupt kernel/power reset first.',
+    relatedDiagnostic: '/android-reboot-analyzer',
     sections: [
-      { heading: 'Treat boot reason as a clue', body: 'Use ro.boot.bootreason or vendor reboot-reason data to choose a direction, then validate that direction against kernel and userspace evidence.' },
-      { heading: 'Separate orderly reboot from reset', body: 'Look for framework shutdown sequences. Their absence, combined with panic or watchdog evidence, changes the likely failure path.' },
-      { heading: 'Correlate hardware-facing services', body: 'Display, biometric, modem, storage, and power services can appear shortly before a reset. Repeated timing relationships are stronger than isolated warnings.' },
+      { heading: 'Boot reason is a routing clue', body: 'ro.boot.bootreason and vendor reason strings can point toward watchdog, panic, power or user-requested reboot, but vendor formats vary. Validate them against independent evidence.' },
+      { heading: 'Look for orderly shutdown checkpoints', body: 'Framework shutdown or reboot trails indicate that Android entered a deliberate path. Their absence, plus pstore panic evidence, supports a different failure class.' },
+      { heading: 'For watchdog, find what stopped making progress', body: 'WATCHDOG KILLING SYSTEM PROCESS is the recovery action. Inspect the first overdue monitor/thread, binder state, wait channels and nearby I/O or vendor service failures.' },
     ],
   },
   {
     slug: 'android-anr-debugging',
-    title: 'Android ANR Debugging Guide',
-    description: 'A practical method for debugging Android ANRs using timeout type, process state, threads, binder, CPU, I/O, and system evidence.',
+    title: 'Android ANR Debugging: Traces, Binder, CPU and System Pressure',
+    description: 'Debug Android ANRs using /data/anr traces, timeout type, thread state, binder calls, CPU scheduling, I/O and memory pressure.',
     heading: 'Android ANR Debugging',
-    summary: 'The ANR line tells you that a deadline was missed. Root cause analysis begins by finding what prevented the target thread or component from completing on time.',
+    summary: 'An ANR says the required work did not finish on time. The investigation is to determine whether the target thread was busy, blocked, unscheduled or waiting on a failing dependency.',
+    relatedDiagnostic: '/android-anr-analyzer',
     sections: [
-      { heading: 'Classify the timeout', body: 'Input dispatch, broadcast, service, and content-provider ANRs have different execution paths. Classify first before reading thread traces.' },
-      { heading: 'Inspect blocking chains', body: 'Look for lock waits, binder calls, disk I/O, network waits, and CPU starvation on the critical execution path.' },
-      { heading: 'Check system pressure', body: 'High CPU, memory pressure, storage stalls, or a failing system service can turn otherwise acceptable code into an ANR.' },
+      { heading: 'Classify the ANR', body: 'Input dispatch, broadcast, service and provider timeouts follow different execution paths. Record the reason and affected process before reading stacks.' },
+      { heading: 'Use the matching ANR trace', body: 'Newer Android releases keep multiple files under /data/anr. The matching trace gives thread states around the event and is often more useful than generic bugreport stack dumps.' },
+      { heading: 'Check system-wide pressure', body: 'A main thread can miss a deadline because of system_server latency, binder saturation, memory pressure or storage stalls. PSI, lmkd and process state help distinguish app-local work from system-wide degradation.' },
     ],
   },
   {
     slug: 'android-native-crash-tombstone',
     title: 'Android Native Crash and Tombstone Debugging Guide',
-    description: 'Understand Android fatal signals, tombstones, abort messages, fault addresses, backtraces, and symbolization requirements.',
+    description: 'Read Android native crash signals, abort messages, fault addresses, BuildId and tombstone backtraces correctly.',
     heading: 'Android Native Crash and Tombstone Debugging',
-    summary: 'Native crashes require exact build identity. Unsymbolized addresses from the wrong binary build can send an investigation in the wrong direction.',
+    summary: 'Tombstones contain more than the one crashing stack: all-thread backtraces, memory maps and build information can turn an unsymbolized crash into a reproducible source-level investigation.',
+    relatedDiagnostic: '/android-crash-analyzer',
     sections: [
-      { heading: 'Read the signal and abort message', body: 'Start with the signal, fault address, process, thread, and abort message before interpreting a backtrace.' },
-      { heading: 'Use matching symbols', body: 'Symbolize only with binaries and symbols from the exact build. Vendor and locally rebuilt libraries can shift addresses significantly.' },
-      { heading: 'Find the first meaningful frame', body: 'Framework crash handlers and libc termination frames are often secondary. Focus on the first frame that belongs to the failing code path.' },
+      { heading: 'Preserve signal and abort message', body: 'SIGABRT often indicates a deliberate abort and may include an abort message. SIGSEGV/SIGBUS need fault-address and memory-map context. Do not discard these header fields when copying a stack.' },
+      { heading: 'Use exact symbols', body: 'The same library name from another build is not enough. Use unstripped binaries or symbols matching the exact BuildId/build so program counters resolve to the correct functions and lines.' },
+      { heading: 'Read before the crash too', body: 'The tombstone explains the fatal moment. Logcat immediately before it can explain why the process chose to abort or what dependency failed first.' },
+    ],
+  },
+  {
+    slug: 'android-batterystats-wakelock-debugging',
+    title: 'Android BatteryStats and Wakelock Debugging Guide',
+    description: 'Use dumpsys batterystats, wake locks, wake reasons, jobs and sync history without over-reading a single battery percentage.',
+    heading: 'BatteryStats and Wakelock Debugging',
+    summary: 'Battery Historian popularized the right mental model: inspect events over time. Wakelocks, jobs, syncs, screen state and radio activity matter because they explain why the device stayed active.',
+    relatedDiagnostic: '/android-battery-wakelock-analyzer',
+    sections: [
+      { heading: 'Use BatteryStats, not guesswork', body: 'dumpsys batterystats exposes per-UID wake locks and machine-readable checkin records. Long partial wake locks are strong leads when they overlap screen-off periods and no useful work should be running.', commands: ['adb shell dumpsys batterystats', 'adb shell dumpsys batterystats --checkin'] },
+      { heading: 'Interpret duration against the observation window', body: 'Five minutes of wake lock in a five-minute active test is normal; five minutes in an otherwise idle screen-off window may not be. Always state the collection window and workload.' },
+      { heading: 'Correlate wakeups with work', body: 'Group wake reasons with jobs, syncs, alarms, network/radio use and foreground transitions. Repeated short bursts can be more damaging to standby than one expected foreground session.' },
+    ],
+  },
+  {
+    slug: 'android-memory-pressure-lmkd',
+    title: 'Android Memory Pressure, PSI and lmkd Debugging Guide',
+    description: 'Investigate Android low-memory kills and OOM using PSI, meminfo, zram/swap and process importance.',
+    heading: 'Android Memory Pressure and lmkd',
+    summary: 'Modern Android uses lmkd and, on supported kernels, PSI to react to real memory pressure. The existence of a kill is less important than what was killed and whether the system was thrashing.',
+    relatedDiagnostic: '/android-memory-pressure-analyzer',
+    sections: [
+      { heading: 'Separate reclamation from instability', body: 'Killing a cached background process can be normal. Repeated kills of visible, persistent or system processes while users see freezes points to a more serious pressure event.' },
+      { heading: 'Read PSI with the rest of memory state', body: 'AOSP dumpstate includes /proc/pressure/cpu, memory and io on current releases. Combine PSI with meminfo, swap/zram and process memory; one snapshot alone cannot prove a leak.' },
+      { heading: 'Treat OOM type correctly', body: 'Java heap OOM, native allocation failure and kernel OOM are different problems. Identify the allocator/failure class before changing heap limits or LMK tuning.' },
+    ],
+  },
+  {
+    slug: 'android-binder-transaction-debugging',
+    title: 'Android Binder Transaction Failure Debugging Guide',
+    description: 'Debug FAILED BINDER TRANSACTION, DeadObjectException, TransactionTooLargeException and binder stalls.',
+    heading: 'Android Binder IPC Debugging',
+    summary: 'Binder is the dependency graph of Android in motion. A failed transaction might mean oversized data, dead service, buffer pressure or a server that is alive but blocked.',
+    relatedDiagnostic: '/android-binder-analyzer',
+    sections: [
+      { heading: 'DeadObjectException: find the death first', body: 'The client error is secondary if the target process crashed or was killed. Correlate with tombstones, Java crash records and lmkd before changing client retry logic.' },
+      { heading: 'TransactionTooLargeException: reduce the payload', body: 'Large Bundles, saved state or binder payloads can fail even when both processes are healthy. Identify the object size/path rather than adding blind retries.' },
+      { heading: 'ANR plus binder failure needs server-side stacks', body: 'If clients wait on a server whose binder pool is blocked, inspect server threads, locks, I/O and memory pressure. The client stack only shows where it waited.' },
+    ],
+  },
+  {
+    slug: 'android-storage-ufs-f2fs-debugging',
+    title: 'Android UFS, eMMC, ext4 and f2fs Error Debugging Guide',
+    description: 'Investigate Android storage I/O timeouts, filesystem corruption and read-only remounts before debugging downstream ANRs.',
+    heading: 'Android Storage and Filesystem Debugging',
+    summary: 'Storage latency and errors propagate upward. A blocked database call can become an app ANR; a stalled critical service can become a system watchdog; a corrupt partition can become a boot loop.',
+    relatedDiagnostic: '/android-storage-io-analyzer',
+    sections: [
+      { heading: 'Find the first block/device error', body: 'Start with the earliest UFS/eMMC/block message and note the device/partition. Later ext4/f2fs recovery messages may only be consequences of the underlying device event.' },
+      { heading: 'Correlate latency, not just fatal errors', body: 'Even without permanent corruption, long I/O stalls can block important threads. Check PSI io, process wait channels and ANR/watchdog timestamps.' },
+      { heading: 'Treat integrity errors as a different class', body: 'dm-verity failures and read-only remounts are integrity/reliability incidents. They should be resolved before app-level symptoms are trusted.' },
     ],
   },
   {
     slug: 'android-fingerprint-hal-debugging',
-    title: 'Android Fingerprint HAL Debugging Guide',
-    description: 'Debug Android fingerprint and UDFPS problems across framework, biometric service, HAL, vendor process, binder, and display layers.',
-    heading: 'Android Fingerprint HAL Debugging',
-    summary: 'Fingerprint is not a single service. Framework state, vendor HAL, binder lifecycle, sensor hardware, and UDFPS display coordination can all matter.',
+    title: 'Android Fingerprint HAL and UDFPS Debugging Guide',
+    description: 'Debug Android fingerprint failures across BiometricService, provider/HAL, binder, vendor service, sensor and display/HBM layers.',
+    heading: 'Android Fingerprint HAL / UDFPS Debugging',
+    summary: 'Under-display fingerprint especially is a cross-subsystem feature. A failure can originate in biometric state, the vendor sensor path or display illumination coordination.',
+    relatedDiagnostic: '/android-fingerprint-log-analyzer',
     sections: [
-      { heading: 'Check service lifecycle first', body: 'Look for biometric or fingerprint service death, binder death notifications, HAL restarts, and failure to reconnect.' },
-      { heading: 'For UDFPS, inspect display coordination', body: 'Under-display sensors depend on display state and brightness/HBM behavior. Correlate authentication timestamps with SurfaceFlinger and composer events.' },
-      { heading: 'Distinguish persistent from transient failure', body: 'A failure that recovers after framework restart is different from one that only recovers after full power cycling.' },
+      { heading: 'Map the service lifecycle', body: 'Check provider registration, HAL/vendor process death, binder death and reconnection. A hardware-unavailable error after reboot may be an initialization race rather than a dead sensor.' },
+      { heading: 'For UDFPS, align display events', body: 'Authentication may depend on local HBM/brightness, panel mode and composition state. Compare biometric callbacks with SurfaceFlinger/composer and kernel display logs.' },
+      { heading: 'Check SELinux only when timestamps match', body: 'An avc denial can block a vendor path, but unrelated denials are common in noisy builds. Match contexts, object and exact operation to the failing fingerprint flow.' },
     ],
   },
   {
     slug: 'android-surfaceflinger-debugging',
-    title: 'Android SurfaceFlinger and HWC Debugging Guide',
-    description: 'Debug Android display freezes and black screens using SurfaceFlinger, hardware composer, DisplayManager, binder, and driver evidence.',
-    heading: 'Android SurfaceFlinger and HWC Debugging',
-    summary: 'A frozen display can originate in app rendering, SurfaceFlinger, hardware composer, vendor services, or the kernel driver. The timeline is the fastest way to separate them.',
+    title: 'Android SurfaceFlinger, HWC and DRM Debugging Guide',
+    description: 'Debug Android frozen/black display by separating app rendering, SurfaceFlinger, vendor composer and kernel DRM/panel failures.',
+    heading: 'Android Display Pipeline Debugging',
+    summary: 'Do not collapse the whole display stack into “SurfaceFlinger error”. The important question is which layer stopped progressing first.',
+    relatedDiagnostic: '/android-display-log-analyzer',
     sections: [
-      { heading: 'Separate rendering from composition', body: 'Application frame production and final hardware composition are different layers. Identify which layer stopped making progress.' },
-      { heading: 'Watch for composer death', body: 'Vendor composer service death or repeated binder errors can leave SurfaceFlinger unable to present frames reliably.' },
-      { heading: 'Correlate with watchdogs', body: 'If display services stop responding before a watchdog reboot, investigate whether the display failure is part of the reset chain rather than a visual side effect.' },
+      { heading: 'Separate producer, compositor and panel', body: 'App frame production, SurfaceFlinger composition, vendor HWC and kernel/panel delivery are distinct stages. Use timestamps and service health to locate the boundary.' },
+      { heading: 'Service death changes the path', body: 'If composer/vendor service dies, SurfaceFlinger errors can be downstream. Look for the process crash or binder death first.' },
+      { heading: 'Kernel timeout plus watchdog is one incident', body: 'A DSI/DRM timeout can leave userspace blocked and later trigger watchdog recovery. Do not file them as unrelated problems until the timeline disproves the link.' },
+    ],
+  },
+  {
+    slug: 'android-selinux-avc-debugging',
+    title: 'Android SELinux AVC Denial Debugging Guide',
+    description: 'Interpret avc: denied using permission, scontext, tcontext, tclass and the failing operation.',
+    heading: 'Android SELinux AVC Debugging',
+    summary: 'An AVC denial is a structured statement: who tried to do what to which object class. Use those fields instead of generating policy from a line without understanding the architecture.',
+    relatedDiagnostic: '/android-selinux-denial-analyzer',
+    sections: [
+      { heading: 'Read the fields together', body: 'Permission describes the attempted action, scontext identifies the actor domain, tcontext identifies the target label and tclass identifies the object type. comm/path/name can add operational context.' },
+      { heading: 'Match denial to symptom', body: 'A denial matters when it occurs on the failing path. A camera denial during a fingerprint failure may be noise; a fingerprint vendor domain denied access to its device node at authentication time is materially different.' },
+      { heading: 'Do not solve production policy by going permissive', body: 'Permissive mode is a debugging aid, not a fix. Correct the component behavior, labeling or narrowly justified allow rule while preserving neverallow constraints.' },
     ],
   },
   {
     slug: 'android-thermal-debugging',
-    title: 'Android Thermal Shutdown and Throttling Debugging Guide',
-    description: 'Investigate Android thermal shutdown and throttling using thermal zones, policy thresholds, workload correlation, and reboot evidence.',
+    title: 'Android Thermal Throttling and Shutdown Debugging Guide',
+    description: 'Investigate severe thermal status and thermal shutdown by correlating thermal zones with workload, charging and reboot evidence.',
     heading: 'Android Thermal Debugging',
-    summary: 'Normal throttling is expected. The debugging question is whether thermal policy reached emergency levels or whether heat merely accompanied another failure.',
+    summary: 'Normal throttling is expected under sustained load. Root-cause work starts when policy reaches severe/critical levels, user-visible latency appears or a shutdown is explicitly recorded.',
+    relatedDiagnostic: '/android-thermal-log-analyzer',
     sections: [
-      { heading: 'Identify the thermal zone', body: 'CPU, battery, skin, modem, GPU, and PMIC sensors can have different policy thresholds and implications.' },
-      { heading: 'Map temperature to workload', body: 'Correlate charging, radio activity, display brightness, CPU/GPU load, and ambient conditions with the thermal event.' },
-      { heading: 'Confirm shutdown evidence', body: 'Do not infer thermal shutdown from high temperature alone. Look for explicit thermal emergency, power, or reboot indicators.' },
+      { heading: 'Identify the sensor/zone', body: 'Skin, battery, CPU, GPU, modem and PMIC temperatures have different implications. Record which zone crossed which policy state.' },
+      { heading: 'Map heat to workload', body: 'Charging, modem transmit, camera, GPU load and high display brightness can combine. Use the incident timeline instead of assuming the hottest component caused the event.' },
+      { heading: 'Require explicit shutdown evidence', body: 'A high temperature value alone does not prove a thermal shutdown. Look for critical policy state, shutdown markers and reboot evidence.' },
     ],
   },
 ];

@@ -1,62 +1,75 @@
 import type { AnalyzerContext, DiagnosticAnalyzer, Finding } from '../types';
-import { confidenceFromEvidence, findMatchingLines, stableFindingId, toEvidence } from '../utils';
+import {
+  confidenceFromEvidence,
+  contextAround,
+  findMatchingLines,
+  stableFindingId,
+  uniqueEvidence,
+  withEvidenceStrength,
+} from '../utils';
 
 export class KernelAnalyzer implements DiagnosticAnalyzer {
   readonly category = 'kernel' as const;
 
   analyze(context: AnalyzerContext): Finding[] {
+    const findings: Finding[] = [];
     const panic = findMatchingLines(context.lines, [
       /Kernel panic/i,
-      /panic_on_oops/i,
-      /Unable to handle kernel/i,
+      /Unable to handle kernel (?:NULL pointer|paging request)/i,
+      /Internal error: Oops/i,
+      /BUG: unable to handle kernel/i,
       /watchdog bite/i,
-      /BUG:.*(?:kernel|sleeping function|scheduling while atomic)/i,
-    ], [], 10);
+      /panic_on_oops/i,
+    ], [], 12);
+
+    if (panic.length) {
+      const details = panic.flatMap((line) => contextAround(context.lines, line, 3, 12));
+      const confidence = confidenceFromEvidence(panic.length, 92, 2);
+      findings.push(withEvidenceStrength({
+        id: stableFindingId(this.category, 'panic'),
+        category: this.category,
+        severity: 'critical',
+        title: 'Kernel panic or fatal kernel fault detected',
+        summary: 'The diagnostic set contains fatal kernel evidence capable of explaining an abrupt reset. Previous-boot pstore/ramoops is usually more valuable than later Android framework logs for this failure class.',
+        confidence,
+        evidence: uniqueEvidence(details, 16),
+        relatedFindingIds: [],
+        recommendedChecks: [
+          'Prioritize console-ramoops, pstore, last_kmsg, or equivalent previous-boot kernel artifacts.',
+          'Find the first call trace associated with the panic/oops before secondary warnings flood the log.',
+          'Match kernel and vendor-module symbols to the exact build and inspect the first subsystem-specific frames.',
+        ],
+        tags: ['kernel', 'panic', 'pstore', 'ramoops'],
+      }));
+    }
 
     const stalls = findMatchingLines(context.lines, [
       /soft lockup/i,
       /hard LOCKUP/i,
+      /INFO: task .* blocked for more than/i,
       /hung task/i,
-      /blocked for more than \d+ seconds/i,
-      /RCU.*stall/i,
-    ], [], 10);
-
-    const findings: Finding[] = [];
-    if (panic.length) {
-      findings.push({
-        id: stableFindingId(this.category, 'panic'),
-        category: this.category,
-        severity: 'critical',
-        title: 'Kernel panic or fatal kernel fault evidence detected',
-        summary: 'The diagnostic data contains kernel-level fatal fault indicators that can explain abrupt resets or severe device instability.',
-        confidence: confidenceFromEvidence(panic.length, 90, 2),
-        evidence: panic.map(toEvidence),
-        relatedFindingIds: [],
-        recommendedChecks: [
-          'Capture pstore/ramoops or last-kmsg data if available.',
-          'Inspect the first faulting stack and subsystem before secondary errors appear.',
-          'Verify that kernel symbols and vendor modules match the exact build.',
-        ],
-        tags: ['kernel', 'panic', 'ramoops'],
-      });
-    }
-
+      /RCU.*(?:stall|starvation)/i,
+      /rcu_preempt detected stalls/i,
+    ], [], 14);
     if (stalls.length) {
-      findings.push({
+      const details = stalls.flatMap((line) => contextAround(context.lines, line, 1, 7));
+      const confidence = confidenceFromEvidence(stalls.length, 82, 2);
+      findings.push(withEvidenceStrength({
         id: stableFindingId(this.category, 'stall'),
         category: this.category,
         severity: 'high',
-        title: 'Kernel stall or lockup evidence detected',
-        summary: 'Scheduler, RCU, or blocked-task warnings suggest a kernel-side stall that may contribute to watchdog resets or severe latency.',
-        confidence: confidenceFromEvidence(stalls.length, 80, 3),
-        evidence: stalls.map(toEvidence),
+        title: 'Kernel scheduler/RCU stall evidence detected',
+        summary: 'A soft/hard lockup, hung task, or RCU stall means kernel work stopped making timely progress. This can surface as ANRs, watchdog resets, frozen display, or delayed binder transactions at higher layers.',
+        confidence,
+        evidence: uniqueEvidence(details, 14),
         relatedFindingIds: [],
         recommendedChecks: [
-          'Inspect the blocked task stack and owner of any contended lock.',
-          'Correlate stall timestamps with storage, display, modem, or driver activity.',
+          'Inspect the blocked task and call trace, then identify the wait object or driver path.',
+          'Correlate with I/O, display, modem, GPU, memory-reclaim, and interrupt activity around the same time.',
+          'Do not treat repeated downstream framework timeouts as independent root causes until the kernel stall is explained.',
         ],
-        tags: ['kernel', 'stall', 'lockup'],
-      });
+        tags: ['kernel', 'stall', 'rcu', 'hung-task'],
+      }));
     }
 
     return findings;

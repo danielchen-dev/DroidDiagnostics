@@ -1,10 +1,36 @@
+========================================================
+== dumpstate: 2026-09-24 10:10:20
+========================================================
 [ro.product.model]: [DemoDevice]
 [ro.product.manufacturer]: [DemoVendor]
+[ro.product.name]: [demo_product]
+[ro.product.device]: [demo]
 [ro.build.version.release]: [16]
 [ro.build.version.sdk]: [36]
 [ro.build.id]: [DEMO.2026.09]
+[ro.build.type]: [userdebug]
+[ro.build.version.security_patch]: [2026-09-05]
 [ro.boot.bootreason]: [watchdog]
+
+------ SYSTEM LOG (logcat -v threadtime -d *:v) ------
+09-24 10:10:08.100  1000  1000 E SurfaceFlinger: composer service died, display error
+09-24 10:10:08.220  1000  1000 E FingerprintService: fingerprint HAL died: HW_UNAVAILABLE
+09-24 10:10:09.001  1000  1000 E ActivityManager: ANR in com.example.app
+09-24 10:10:09.002  1000  1000 E ActivityManager: Reason: Input dispatching timed out
 09-24 10:10:10.111  1000  1000 E Watchdog: WATCHDOG KILLING SYSTEM PROCESS: Blocked in monitor
-09-24 10:10:10.222  1000  1000 E SurfaceFlinger: composer service died, display error
-09-24 10:10:10.333  1000  1000 E FingerprintService: fingerprint HAL died: HW_UNAVAILABLE
-09-24 10:10:10.444  1000  1000 E kernel: Kernel panic - not syncing: fatal exception
+09-24 10:10:10.222  1000  1000 E system_server: watchdog timeout triggered reboot
+
+------ LAST KMSG (/sys/fs/pstore/console-ramoops) ------
+[ 8123.100000] binder: 1420:1420 transaction failed 29189/-28, size 1048576-0 line 3125
+[ 8123.120000] I/O error, dev sda, sector 123456 op 0x0
+[ 8123.200000] Kernel panic - not syncing: demo fatal exception
+
+------ DUMPSYS BATTERYSTATS ------
+Wake lock DemoWakeLock: 12m 4s 210ms partial (3 times) realtime
+
+------ PSI MEMORY (/proc/pressure/memory) ------
+some avg10=12.10 avg60=5.20 avg300=2.50 total=1234567
+09-24 10:09:50.000 lmkd: Killing 'com.example.heavy' (3210), uid 10234, to free 248000kB; oom_adj 900
+
+------ SECURITY LOG ------
+09-24 10:09:55.000 audit: avc: denied { open } for pid=1000 comm="vendor.fp" path="/dev/fingerprint" scontext=u:r:vendor_fingerprint:s0 tcontext=u:object_r:fingerprint_device:s0 tclass=chr_file permissive=0

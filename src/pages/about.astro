@@ -1,8 +1,29 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 const title = 'About DroidDiagnostics';
-const description = 'DroidDiagnostics is a privacy-first Android and AOSP diagnostic triage tool that analyzes supported logs locally in the browser.';
+const description = 'DroidDiagnostics is a privacy-first Android/AOSP diagnostic workbench that parses supported bugreport evidence locally in the browser.';
 ---
 <BaseLayout {title} {description}>
-  <section class="content-page"><div class="shell"><header class="content-header"><span class="kicker">About</span><h1>Diagnostics should start with evidence.</h1><p>DroidDiagnostics is built to turn large Android diagnostic archives into a smaller set of reviewable findings without sending the source archive to a server.</p></header><section class="card prose-card"><h2>MVP scope</h2><p>The current engine focuses on reboot, ANR, Java/native crash, kernel, biometric, display, thermal, and boot failure signatures. It is a triage tool: it helps engineers find relevant evidence faster, but it does not claim that a matched line alone proves root cause.</p></section><section class="card prose-card"><h2>Designed to expand</h2><p>The analyzer uses independent subsystem modules and a common finding model so tombstone symbolization, dedicated logcat analysis, APK inspection, vendor-specific rules, and optional explanation layers can be added without replacing the core pipeline.</p></section></div></section>
+  <section class="content-page">
+    <div class="shell content-shell">
+      <header class="content-header">
+        <span class="kicker">About</span>
+        <h1>Diagnostics should start with evidence.</h1>
+        <p>DroidDiagnostics turns large Android diagnostic archives into a smaller, inspectable set of findings while keeping the source archive in the browser.</p>
+      </header>
+      <section class="card prose-card">
+        <h2>Current scope</h2>
+        <p>The v0.2 engine inventories modern bugreport archives and triages reboot, ANR, Java/native crash, kernel, Binder, memory, storage, biometric/UDFPS, display, thermal, battery, network, SELinux, and boot evidence. It keeps matching source excerpts visible because a signature is evidence, not automatic proof of root cause.</p>
+      </section>
+      <section class="card prose-card">
+        <h2>Deterministic by design</h2>
+        <p>The core parser does not ask an LLM to interpret private diagnostics. Subsystem analyzers use explicit signatures, source context, severity rules, evidence strength, and correlation. Optional explanation layers can be added later without making them the source of truth.</p>
+      </section>
+      <section class="card prose-card">
+        <h2>Designed to become a workbench</h2>
+        <p>The next stages are structured ANR/tombstone/BatteryStats parsers, typed dumpstate service models, real-device regression fixtures, A/B comparison, and richer incident timelines. The existing finding model and source inventory are designed so those additions do not require replacing the core pipeline.</p>
+      </section>
+      <div class="article-actions"><a class="button button-primary" href="/analyze">Open analyzer</a><a class="button" href="/references">Technical references</a></div>
+    </div>
+  </section>
 </BaseLayout>

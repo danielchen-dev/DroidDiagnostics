@@ -6,9 +6,17 @@ export type FindingCategory =
   | 'biometric'
   | 'display'
   | 'thermal'
-  | 'boot';
+  | 'boot'
+  | 'battery'
+  | 'memory'
+  | 'binder'
+  | 'storage'
+  | 'network'
+  | 'selinux';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type EvidenceStrength = 'strong' | 'moderate' | 'weak';
+export type SourceKind = 'bugreport' | 'anr' | 'tombstone' | 'kernel' | 'logcat' | 'metadata' | 'other';
 
 export interface Evidence {
   source: string;
@@ -33,6 +41,7 @@ export interface Finding {
   title: string;
   summary: string;
   confidence: number;
+  evidenceStrength: EvidenceStrength;
   evidence: Evidence[];
   relatedFindingIds: string[];
   recommendedChecks: string[];
@@ -42,19 +51,52 @@ export interface Finding {
 export interface DeviceMetadata {
   model?: string;
   manufacturer?: string;
+  product?: string;
+  device?: string;
   androidVersion?: string;
   sdk?: string;
   buildFingerprint?: string;
   buildId?: string;
+  buildType?: string;
   securityPatch?: string;
   kernelVersion?: string;
   bootReason?: string;
+  uptime?: string;
 }
 
 export interface DiagnosticSource {
   name: string;
   text: string;
   truncated: boolean;
+  kind?: SourceKind;
+  declaredByMainEntry?: boolean;
+}
+
+export interface ReportSection {
+  id: string;
+  title: string;
+  source: string;
+  startLine: number;
+  endLine: number;
+  kind:
+    | 'logcat'
+    | 'dumpsys'
+    | 'kernel'
+    | 'battery'
+    | 'memory'
+    | 'network'
+    | 'process'
+    | 'filesystem'
+    | 'anr'
+    | 'other';
+}
+
+export interface ReportInventory {
+  bugreportFormat?: string;
+  mainEntry?: string;
+  sourceKinds: Record<SourceKind, number>;
+  sections: ReportSection[];
+  detectedCapabilities: string[];
 }
 
 export interface AnalysisInput {
@@ -67,6 +109,7 @@ export interface AnalysisResult {
   metadata: DeviceMetadata;
   findings: Finding[];
   timeline: TimelineEvent[];
+  inventory: ReportInventory;
   sourceSummary: {
     filesRead: number;
     charactersRead: number;
@@ -78,10 +121,12 @@ export interface AnalyzerContext {
   sources: DiagnosticSource[];
   lines: IndexedLine[];
   metadata: DeviceMetadata;
+  inventory: ReportInventory;
 }
 
 export interface IndexedLine {
   source: string;
+  sourceKind?: SourceKind;
   lineNumber: number;
   text: string;
   timestamp?: string;

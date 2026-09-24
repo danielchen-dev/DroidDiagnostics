@@ -1,0 +1,52 @@
+---
+import { technicalReferences } from '@/content/references';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const title = 'Android Diagnostic Technical References – DroidDiagnostics';
+const description = 'Primary Android/AOSP documentation and open-source projects used as technical references for DroidDiagnostics parser and knowledge-base design.';
+const official = technicalReferences.filter((reference) => reference.type === 'official');
+const openSource = technicalReferences.filter((reference) => reference.type === 'open-source');
+---
+<BaseLayout {title} {description}>
+  <article class="content-page">
+    <div class="shell content-shell">
+      <header class="content-header">
+        <span class="kicker">Engineering references</span>
+        <h1>Built against Android's diagnostic sources.</h1>
+        <p>DroidDiagnostics uses an original browser-side implementation. These documents and projects are references for file structure, subsystem semantics, and proven diagnostic workflows—not a claim that every warning can be reduced to one regex.</p>
+      </header>
+
+      <section class="reference-section">
+        <div class="section-head compact"><h2>Primary documentation</h2><p>AOSP source and Android documentation take priority when parser behavior or terminology is ambiguous.</p></div>
+        <div class="reference-grid">
+          {official.map((reference) => (
+            <a class="card reference-card" href={reference.url} target="_blank" rel="noreferrer">
+              <span class="reference-type">Official</span>
+              <h3>{reference.title}</h3>
+              <strong>{reference.organization}</strong>
+              <p>{reference.description}</p>
+              <span class="arrow">Open source reference ↗</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="reference-section">
+        <div class="section-head compact"><h2>Open-source prior art</h2><p>These projects are useful engineering references. Battery Historian and ChkBugReport are archived; DroidDiagnostics does not depend on them at runtime.</p></div>
+        <div class="reference-grid">
+          {openSource.map((reference) => (
+            <a class="card reference-card" href={reference.url} target="_blank" rel="noreferrer">
+              <span class="reference-type open">Open source</span>
+              <h3>{reference.title}</h3>
+              <strong>{reference.organization}</strong>
+              <p>{reference.description}</p>
+              <span class="arrow">Open repository ↗</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <div class="callout reference-note">Implementation note: source code from external projects is not copied into the analyzer engine. Their documented concepts and public formats are used as references while DroidDiagnostics keeps its own TypeScript parser, data model, and tests.</div>
+    </div>
+  </article>
+</BaseLayout>

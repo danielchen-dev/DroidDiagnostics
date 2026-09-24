@@ -1,11 +1,12 @@
 ---
 import AnalyzerApp from '@/components/analyzer/AnalyzerApp';
 import { diagnosticPages } from '@/content/diagnostics';
+import { errorReferences } from '@/content/errors';
 import { guidePages } from '@/content/guides';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
-const title = 'DroidDiagnostics – Private Android Bugreport Analyzer';
-const description = 'Analyze Android bugreport files for reboots, ANRs, crashes, kernel faults, fingerprint, display, thermal, and boot problems. Files stay in your browser.';
+const title = 'DroidDiagnostics – Android Bugreport Analyzer';
+const description = 'Parse Android bugreport.zip locally for reboot, ANR, native crash, kernel, Binder, memory, storage, biometric, display, thermal, battery, network, SELinux and boot evidence.';
 const jsonLd = [
   {
     '@context': 'https://schema.org',
@@ -28,44 +29,74 @@ const jsonLd = [
 <BaseLayout {title} {description} {jsonLd}>
   <section class="hero">
     <div class="shell">
-      <div class="eyebrow"><span class="eyebrow-dot"></span>Private browser-side diagnostics</div>
-      <h1>Find the signal inside an Android bugreport.</h1>
-      <p class="hero-lead">Detect reboot, ANR, crash, kernel, fingerprint, display, thermal, and boot-failure evidence without uploading your diagnostic archive.</p>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>Local Android diagnostics · deterministic parser</div>
+      <h1>Turn a bugreport into an engineering starting point.</h1>
+      <p class="hero-lead">Inspect Android bugreport archives for failure signatures, source evidence, report structure, and cross-subsystem timing—without uploading the diagnostic file or asking an LLM to guess.</p>
       <div class="hero-actions">
         <a class="button button-primary" href="#analyzer">Analyze bugreport</a>
-        <a class="button" href="#diagnostics">Browse diagnostic tools</a>
+        <a class="button" href="/bugreport-format">See what the parser reads</a>
       </div>
       <div class="trust-row">
-        <span>No account</span><span>No file upload</span><span>Free MVP</span><span>Android 10–16 oriented</span>
+        <span>No account</span><span>No diagnostic upload</span><span>No LLM in the parser</span><span>Evidence stays inspectable</span>
       </div>
       <div class="feature-strip">
-        <div><strong>Local analysis</strong><span>Diagnostic content remains in the browser.</span></div>
-        <div><strong>Evidence first</strong><span>Every finding points back to matching source lines.</span></div>
-        <div><strong>Cross-subsystem</strong><span>Framework, HAL, kernel, display, biometric, and thermal signals.</span></div>
-        <div><strong>Exportable</strong><span>Generate a plain-text engineering report.</span></div>
+        <div><strong>Archive-aware</strong><span>Reads main-entry/version metadata plus high-value ANR, tombstone, kernel and log sources.</span></div>
+        <div><strong>14 subsystems</strong><span>Framework, kernel, Binder, memory, storage, battery, network, SELinux, display and more.</span></div>
+        <div><strong>Evidence first</strong><span>Findings retain source file, line number, timestamp and the matched diagnostic excerpt.</span></div>
+        <div><strong>Correlation</strong><span>Related signals are connected so downstream ANRs or watchdogs are not treated in isolation.</span></div>
       </div>
     </div>
   </section>
 
-  <section id="analyzer" class="section">
+  <section id="analyzer" class="section analyzer-section">
     <div class="shell"><AnalyzerApp client:load /></div>
+  </section>
+
+  <section class="section section-contrast">
+    <div class="shell">
+      <div class="section-head"><span class="kicker">What the engine understands</span><h2>A real bugreport is more than logcat.</h2><p>The parser inventories the archive first, then analyzes evidence according to source type. That makes pstore, ANR traces, tombstones, BatteryStats, PSI, Binder and dumpstate sections usable as separate diagnostic inputs.</p></div>
+      <div class="workflow-grid">
+        <div class="workflow-step"><span>01</span><h3>Inventory</h3><p>Identify format metadata, main entry, side files, source classes and dumpstate sections.</p></div>
+        <div class="workflow-step"><span>02</span><h3>Parse</h3><p>Run subsystem-specific rules instead of treating every word such as “error” or “timeout” the same.</p></div>
+        <div class="workflow-step"><span>03</span><h3>Correlate</h3><p>Connect reboot, kernel, storage, Binder, memory, display, biometric and other related findings.</p></div>
+        <div class="workflow-step"><span>04</span><h3>Verify</h3><p>Show the source excerpts and next checks so a human can accept, reject, or deepen the diagnosis.</p></div>
+      </div>
+      <div class="article-actions"><a class="button" href="/bugreport-format">Explore bugreport.zip structure</a><a class="button" href="/references">See technical references</a></div>
+    </div>
   </section>
 
   <section id="diagnostics" class="section">
     <div class="shell">
-      <div class="section-head"><span class="kicker">Problem-focused tools</span><h2>Start from the symptom you actually have.</h2><p>Each diagnostic page explains the failure class and opens the same local analyzer with the relevant subsystem prioritized.</p></div>
+      <div class="section-head"><span class="kicker">Problem-focused analyzers</span><h2>Start from the symptom you actually have.</h2><p>Each page combines a subsystem-specific debugging brief with the same local engine. This keeps search traffic useful instead of creating thin keyword pages.</p></div>
       <div class="grid grid-3">
         {diagnosticPages.map((page) => <a class="card card-pad link-card" href={`/${page.slug}`}><h3>{page.h1}</h3><p>{page.description}</p><span class="arrow">Open analyzer →</span></a>)}
       </div>
     </div>
   </section>
 
-  <section id="guides" class="section">
+  <section id="guides" class="section section-contrast">
     <div class="shell">
-      <div class="section-head"><span class="kicker">Diagnostic knowledge base</span><h2>Debug the failure, not the noise.</h2><p>Practical Android/AOSP debugging guides built around incident timelines, evidence quality, and subsystem boundaries.</p></div>
+      <div class="section-head"><span class="kicker">Diagnostic knowledge base</span><h2>Debug the failure, not the noise.</h2><p>Practical Android/AOSP guides built around evidence quality, incident timing, subsystem boundaries, and the next command or artifact an engineer actually needs.</p></div>
       <div class="grid grid-2">
         {guidePages.map((guide) => <a class="card card-pad link-card" href={`/guides/${guide.slug}`}><h3>{guide.heading}</h3><p>{guide.description}</p><span class="arrow">Read guide →</span></a>)}
       </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <div class="section-head"><span class="kicker">Signature reference</span><h2>Common Android failure records, explained in context.</h2><p>These pages target concrete log signatures and explain what they establish, what they do not establish, and which evidence should be checked next.</p></div>
+      <div class="reference-link-grid">
+        {errorReferences.slice(0, 12).map((entry) => <a class="reference-link" href={`/errors/${entry.slug}`}><span>{entry.subsystem}</span><strong>{entry.title}</strong><small>{entry.signature}</small></a>)}
+      </div>
+      <div class="article-actions"><a class="button" href="/errors">Browse all error signatures</a></div>
+    </div>
+  </section>
+
+  <section class="section section-contrast">
+    <div class="shell product-principles">
+      <div><span class="kicker">Product principle</span><h2>No fabricated certainty.</h2></div>
+      <div><p>DroidDiagnostics labels evidence strength rather than presenting an arbitrary probability as “root-cause confidence.” A parser can prove that a signature exists; it cannot prove that every matched line caused the incident.</p><p>The long-term product goal is a reproducible diagnostic workbench: structured artifact parsing, incident timelines, A/B comparison, and build-specific engineering review when automation stops being trustworthy.</p></div>
     </div>
   </section>
 </BaseLayout>

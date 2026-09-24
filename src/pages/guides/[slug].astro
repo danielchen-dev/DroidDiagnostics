@@ -1,19 +1,56 @@
 ---
 import { guidePages } from '@/content/guides';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-export function getStaticPaths() { return guidePages.map((guide) => ({ params: { slug: guide.slug }, props: { guide } })); }
+
+export function getStaticPaths() {
+  return guidePages.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
 const { guide } = Astro.props;
 const jsonLd = {
-  '@context': 'https://schema.org', '@type': 'TechArticle', headline: guide.heading,
-  description: guide.description, author: { '@type': 'Organization', name: 'DroidDiagnostics' },
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: guide.heading,
+  description: guide.description,
+  author: { '@type': 'Organization', name: 'DroidDiagnostics' },
 };
 ---
 <BaseLayout title={guide.title} description={guide.description} jsonLd={jsonLd}>
   <article class="content-page">
-    <div class="shell">
-      <header class="content-header"><span class="kicker">Android debugging guide</span><h1>{guide.heading}</h1><p>{guide.summary}</p></header>
-      {guide.sections.map((section) => <section class="card prose-card"><h2>{section.heading}</h2><p>{section.body}</p></section>)}
-      <div class="hero-actions" style="justify-content:flex-start"><a class="button button-primary" href="/analyze">Analyze a bugreport</a><a class="button" href="/contact">Request engineering review</a></div>
+    <div class="shell content-shell">
+      <header class="content-header">
+        <span class="kicker">Android debugging guide</span>
+        <h1>{guide.heading}</h1>
+        <p>{guide.summary}</p>
+      </header>
+
+      <div class="article-stack">
+        {guide.sections.map((section, index) => (
+          <section class="card prose-card guide-section">
+            <div class="section-number">{String(index + 1).padStart(2, '0')}</div>
+            <div>
+              <h2>{section.heading}</h2>
+              <p>{section.body}</p>
+              {section.commands?.length ? (
+                <div class="command-block" aria-label="Commands">
+                  {section.commands.map((command) => <code>{command}</code>)}
+                </div>
+              ) : null}
+              {section.notes?.length ? (
+                <ul class="note-list">
+                  {section.notes.map((note) => <li>{note}</li>)}
+                </ul>
+              ) : null}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div class="article-actions">
+        <a class="button button-primary" href={guide.relatedDiagnostic ?? '/analyze'}>Open related analyzer</a>
+        <a class="button" href="/bugreport-format">Understand bugreport structure</a>
+        <a class="button" href="/references">Technical references</a>
+      </div>
     </div>
   </article>
 </BaseLayout>

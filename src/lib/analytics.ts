@@ -14,7 +14,13 @@ export type AnalyticsEventName =
   | 'finding_biometric'
   | 'finding_display'
   | 'finding_thermal'
-  | 'finding_boot';
+  | 'finding_boot'
+  | 'finding_battery'
+  | 'finding_memory'
+  | 'finding_binder'
+  | 'finding_storage'
+  | 'finding_network'
+  | 'finding_selinux';
 
 const VISITOR_KEY = 'dd.visitor.v1';
 const SESSION_KEY = 'dd.session.v1';

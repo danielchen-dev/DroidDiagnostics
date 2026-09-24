@@ -27,6 +27,7 @@ const EVENT_ALLOWLIST = new Set([
   'page_view', 'analysis_started', 'analysis_completed', 'analysis_failed', 'report_exported',
   'cta_clicked', 'contact_started', 'contact_submitted', 'finding_reboot', 'finding_anr',
   'finding_crash', 'finding_kernel', 'finding_biometric', 'finding_display', 'finding_thermal', 'finding_boot',
+  'finding_battery', 'finding_memory', 'finding_binder', 'finding_storage', 'finding_network', 'finding_selinux',
 ]);
 
 const json = (data: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(data), {
@@ -190,6 +191,11 @@ async function handleAdminLogin(request: Request, env: Env): Promise<Response> {
   return json({ ok: true }, { headers: { 'set-cookie': `dd_admin=${token}; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=28800` } });
 }
 
+async function handleAdminLogout(request: Request): Promise<Response> {
+  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  return json({ ok: true }, { headers: { 'set-cookie': `dd_admin=deleted; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=0` } });
+}
+
 async function queryAnalytics(env: Env, query: string): Promise<Array<Record<string, unknown>>> {
   if (!env.CLOUDFLARE_ACCOUNT_ID || !env.ANALYTICS_API_TOKEN) throw new Error('Analytics SQL API credentials are not configured.');
   const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/analytics_engine/sql`, {
@@ -257,11 +263,12 @@ async function handleAdminMetrics(request: Request, env: Env): Promise<Response>
 
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  if (request.method === 'GET' && url.pathname === '/api/health') return json({ ok: true, service: 'droiddiagnostics', version: '0.1.0' });
+  if (request.method === 'GET' && url.pathname === '/api/health') return json({ ok: true, service: 'droiddiagnostics', version: '0.3.5' });
   if (request.method === 'POST' && url.pathname === '/api/events') return handleEvent(request, env);
   if (request.method === 'POST' && url.pathname === '/api/contact') return handleContact(request, env);
   if (request.method === 'POST' && url.pathname === '/api/admin/login') return handleAdminLogin(request, env);
   if (request.method === 'GET' && url.pathname === '/api/admin/metrics') return handleAdminMetrics(request, env);
+  if (request.method === 'POST' && url.pathname === '/api/admin/logout') return handleAdminLogout(request);
   return json({ ok: false, error: 'Not found.' }, { status: 404 });
 }
 

@@ -1,0 +1,58 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const title = 'Android bugreport.zip Structure – DroidDiagnostics';
+const description = 'A practical map of modern Android bugreport.zip: main-entry.txt, version.txt, dumpstate sections, ANR traces, tombstones, pstore, BatteryStats, PSI, Binder and network evidence.';
+---
+<BaseLayout {title} {description}>
+  <article class="content-page">
+    <div class="shell content-shell">
+      <header class="content-header">
+        <span class="kicker">Bugreport anatomy</span>
+        <h1>A bugreport is a diagnostic container, not one log file.</h1>
+        <p>Modern Android bugreports combine a large dumpstate text entry with metadata and side artifacts. A useful parser preserves where evidence came from because a tombstone, pstore record, ANR trace, and dumpsys section do not carry the same meaning.</p>
+      </header>
+
+      <section class="card architecture-card">
+        <div class="archive-tree" aria-label="Typical Android bugreport archive structure">
+          <code>bugreport-BUILD-DATE.zip</code>
+          <div><span>├─</span> <strong>version.txt</strong><small>Bugreport format version</small></div>
+          <div><span>├─</span> <strong>main-entry.txt</strong><small>Name of the primary dumpstate text file</small></div>
+          <div><span>├─</span> <strong>bugreport-....txt</strong><small>System state, log buffers, dumpsys, kernel/process/network sections</small></div>
+          <div><span>├─</span> <strong>FS/data/anr/...</strong><small>ANR traces on supported Android releases</small></div>
+          <div><span>├─</span> <strong>FS/data/tombstones/...</strong><small>Native crash tombstones / related crash artifacts</small></div>
+          <div><span>├─</span> <strong>FS/sys/fs/pstore/...</strong><small>Previous-boot kernel/panic evidence when available</small></div>
+          <div><span>└─</span> <strong>other collected artifacts</strong><small>Recovery, update engine, filesystem and vendor-dependent files</small></div>
+        </div>
+      </section>
+
+      <section class="section-slim">
+        <div class="section-head compact"><h2>What DroidDiagnostics currently inventories</h2><p>The v0.2 engine records source type and dumpstate section boundaries before subsystem analyzers run.</p></div>
+        <div class="grid grid-3">
+          <div class="card card-pad"><h3>Runtime logs</h3><p class="muted">System, event, radio/logcat-like records used for event ordering and service lifecycle evidence.</p></div>
+          <div class="card card-pad"><h3>Kernel / pstore</h3><p class="muted">Kernel panic, hung-task, storage/driver faults, previous-boot evidence, and low-level restart context.</p></div>
+          <div class="card card-pad"><h3>ANR & tombstones</h3><p class="muted">Separate artifacts are prioritized because they preserve thread/native crash context that a short log line cannot.</p></div>
+          <div class="card card-pad"><h3>Battery & power</h3><p class="muted">BatteryStats, wake-lock and power-related sections are recognized for battery timeline work.</p></div>
+          <div class="card card-pad"><h3>Memory & Binder</h3><p class="muted">PSI/memory signals, lmkd activity, Binder failures, and cross-process dependencies support ANR/watchdog triage.</p></div>
+          <div class="card card-pad"><h3>Storage & network</h3><p class="muted">Filesystem/block I/O and connectivity failures are analyzed as possible upstream causes rather than isolated warnings.</p></div>
+        </div>
+      </section>
+
+      <section class="card prose-card">
+        <h2>Why source identity matters</h2>
+        <p>A line that says “timeout” inside kernel output is not equivalent to a framework service timeout. Likewise, a post-reboot logcat buffer may no longer contain the event that triggered a panic, while pstore still does. DroidDiagnostics therefore tracks archive entry, line number, source kind, and timestamp whenever available.</p>
+      </section>
+
+      <section class="card prose-card">
+        <h2>What the analyzer deliberately does not claim</h2>
+        <p>No static parser can prove a root cause from every bugreport. Vendor sections vary, buffers can rotate, some data is redacted, and an incident may require symbols or reproduction. The tool labels evidence strength and keeps the original source excerpts visible so a human engineer can verify the conclusion.</p>
+      </section>
+
+      <div class="article-actions">
+        <a class="button button-primary" href="/analyze">Analyze a bugreport</a>
+        <a class="button" href="/guides/android-bugreport-zip-structure">Read the parsing guide</a>
+        <a class="button" href="/references">Technical references</a>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,28 @@
+---
+import { errorReferences } from '@/content/errors';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const title = 'Android Error & Log Signature Reference – DroidDiagnostics';
+const description = 'Android diagnostic reference for watchdog, ANR, native crash, Binder, memory, storage, SELinux, fingerprint, display, thermal, network, kernel and boot signatures.';
+---
+<BaseLayout {title} {description}>
+  <article class="content-page">
+    <div class="shell content-shell">
+      <header class="content-header">
+        <span class="kicker">Signature reference</span>
+        <h1>Android failure signatures, with the missing context.</h1>
+        <p>A log line can prove that an event happened without proving why it happened. These references explain what each signature establishes and which evidence should be checked next.</p>
+      </header>
+      <div class="reference-link-grid">
+        {errorReferences.map((entry) => (
+          <a class="reference-link" href={`/errors/${entry.slug}`}>
+            <span>{entry.subsystem}</span>
+            <strong>{entry.title}</strong>
+            <small>{entry.signature}</small>
+          </a>
+        ))}
+      </div>
+      <div class="article-actions"><a class="button button-primary" href="/analyze">Run local analysis</a><a class="button" href="/references">Technical references</a></div>
+    </div>
+  </article>
+</BaseLayout>

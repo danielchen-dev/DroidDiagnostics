@@ -1,13 +1,20 @@
 import { AnrAnalyzer } from './analyzers/anr';
+import { BatteryAnalyzer } from './analyzers/battery';
 import { BiometricAnalyzer } from './analyzers/biometric';
+import { BinderAnalyzer } from './analyzers/binder';
 import { BootAnalyzer } from './analyzers/boot';
 import { CrashAnalyzer } from './analyzers/crash';
 import { DisplayAnalyzer } from './analyzers/display';
 import { KernelAnalyzer } from './analyzers/kernel';
+import { MemoryAnalyzer } from './analyzers/memory';
+import { NetworkAnalyzer } from './analyzers/network';
 import { RebootAnalyzer } from './analyzers/reboot';
+import { SelinuxAnalyzer } from './analyzers/selinux';
+import { StorageAnalyzer } from './analyzers/storage';
 import { ThermalAnalyzer } from './analyzers/thermal';
 import { buildTimeline, correlateFindings } from './correlation';
 import { parseMetadata } from './metadata';
+import { buildReportInventory, normalizeSourceKinds } from './sections';
 import type { AnalysisInput, AnalysisResult, DiagnosticAnalyzer } from './types';
 import { indexSources, severityRank } from './utils';
 
@@ -16,16 +23,24 @@ const ANALYZERS: DiagnosticAnalyzer[] = [
   new AnrAnalyzer(),
   new CrashAnalyzer(),
   new KernelAnalyzer(),
+  new BinderAnalyzer(),
+  new MemoryAnalyzer(),
+  new StorageAnalyzer(),
   new BiometricAnalyzer(),
   new DisplayAnalyzer(),
   new ThermalAnalyzer(),
+  new BatteryAnalyzer(),
+  new NetworkAnalyzer(),
+  new SelinuxAnalyzer(),
   new BootAnalyzer(),
 ];
 
 export function analyzeDiagnostics(input: AnalysisInput): AnalysisResult {
-  const metadata = parseMetadata(input.sources);
-  const lines = indexSources(input.sources);
-  const context = { sources: input.sources, lines, metadata };
+  const sources = normalizeSourceKinds(input.sources);
+  const metadata = parseMetadata(sources);
+  const inventory = buildReportInventory(sources);
+  const lines = indexSources(sources);
+  const context = { sources, lines, metadata, inventory };
 
   const findings = correlateFindings(
     ANALYZERS.flatMap((analyzer) => analyzer.analyze(context))
@@ -33,15 +48,16 @@ export function analyzeDiagnostics(input: AnalysisInput): AnalysisResult {
   );
 
   return {
-    version: '0.1.0',
+    version: '0.2.0',
     generatedAt: new Date().toISOString(),
     metadata,
     findings,
     timeline: buildTimeline(findings),
+    inventory,
     sourceSummary: {
-      filesRead: input.sources.length,
-      charactersRead: input.sources.reduce((sum, source) => sum + source.text.length, 0),
-      truncatedFiles: input.sources.filter((source) => source.truncated).length,
+      filesRead: sources.length,
+      charactersRead: sources.reduce((sum, source) => sum + source.text.length, 0),
+      truncatedFiles: sources.filter((source) => source.truncated).length,
     },
   };
 }

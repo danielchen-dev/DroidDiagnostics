@@ -1,60 +1,85 @@
 import type { AnalyzerContext, DiagnosticAnalyzer, Finding } from '../types';
-import { confidenceFromEvidence, findMatchingLines, stableFindingId, toEvidence } from '../utils';
+import {
+  confidenceFromEvidence,
+  contextAround,
+  firstCapture,
+  findMatchingLines,
+  stableFindingId,
+  uniqueEvidence,
+  withEvidenceStrength,
+} from '../utils';
 
 export class CrashAnalyzer implements DiagnosticAnalyzer {
   readonly category = 'crash' as const;
 
   analyze(context: AnalyzerContext): Finding[] {
-    const javaCrashes = findMatchingLines(context.lines, [
-      /FATAL EXCEPTION:/i,
-      /AndroidRuntime: FATAL EXCEPTION/i,
-      /Process: [\w.:-]+, PID: \d+/i,
-    ], [], 10);
-
-    const nativeCrashes = findMatchingLines(context.lines, [
-      /Fatal signal \d+/i,
-      /^\*\*\* \*\*\* \*\*\* \*\*\*/,
-      /backtrace:/i,
-      /DEBUG\s*: pid: \d+.*tid:/i,
-    ], [], 10);
-
     const findings: Finding[] = [];
-    if (javaCrashes.length) {
-      findings.push({
-        id: stableFindingId(this.category, 'java'),
+    const javaAnchors = findMatchingLines(context.lines, [
+      /FATAL EXCEPTION:/i,
+      /AndroidRuntime.*FATAL EXCEPTION/i,
+      /Process:\s*[\w.:-]+,\s*PID:\s*\d+/i,
+    ], [], 14);
+
+    if (javaAnchors.length) {
+      const details = javaAnchors.flatMap((line) => contextAround(context.lines, line, 1, 8));
+      const process = firstCapture(details, /Process:\s*([^,\s]+)/i);
+      const exception = firstCapture(details, /^\s*(?:Caused by:\s*)?([\w.$]+(?:Exception|Error))(?::|\s|$)/i);
+      const confidence = confidenceFromEvidence(javaAnchors.length, 87, 2);
+      findings.push(withEvidenceStrength({
+        id: stableFindingId(this.category, `java:${process ?? ''}:${exception ?? ''}`),
         category: this.category,
         severity: 'high',
-        title: 'Java/Kotlin fatal exception detected',
-        summary: 'A fatal Android runtime exception is present in the diagnostic data.',
-        confidence: confidenceFromEvidence(javaCrashes.length, 85, 3),
-        evidence: javaCrashes.map(toEvidence),
+        title: process ? `Java/Kotlin crash in ${process}` : 'Java/Kotlin fatal exception detected',
+        summary: exception
+          ? `${exception} appears in the fatal Android runtime path. The first application-owned frame and the deepest relevant “Caused by” chain are more useful than the FATAL EXCEPTION banner itself.`
+          : 'A fatal Android runtime exception is present. Inspect the exception chain and the first code frame owned by the crashing component.',
+        confidence,
+        evidence: uniqueEvidence(details, 14),
         relatedFindingIds: [],
         recommendedChecks: [
-          'Locate the first application-owned stack frame below the exception.',
-          'Confirm whether the crash is repeated for the same process and code path.',
-          'Check whether a system or vendor service failure preceded the application crash.',
+          'Follow nested “Caused by” entries to the deepest relevant exception.',
+          'Identify the first application/vendor-owned frame rather than stopping at framework dispatch code.',
+          'Check for repeated crashes of the same process and for lower-level service failures that precede them.',
         ],
-        tags: ['java', 'androidruntime', 'fatal-exception'],
-      });
+        tags: ['java', 'androidruntime', exception ?? 'fatal-exception'],
+      }));
     }
 
-    if (nativeCrashes.length) {
-      findings.push({
-        id: stableFindingId(this.category, 'native'),
+    const nativeAnchors = findMatchingLines(context.lines, [
+      /Fatal signal\s+\d+/i,
+      /^\*\*\* \*\*\* \*\*\* \*\*\*/,
+      /signal\s+\d+\s+\(SIG[A-Z]+\)/,
+      /Abort message:/i,
+      /Tombstone written to:/i,
+    ], [], 18);
+
+    if (nativeAnchors.length || context.inventory.sourceKinds.tombstone > 0) {
+      const anchor = nativeAnchors[0];
+      const details = anchor ? contextAround(context.lines, anchor, 5, 18) : context.lines.filter((line) => line.sourceKind === 'tombstone').slice(0, 18);
+      const process = firstCapture(details, />>>\s*([^<]+?)\s*<<</)
+        ?? firstCapture(details, /name:\s*([^\s]+)\s+>>>/i);
+      const signal = firstCapture(details, /signal\s+\d+\s+\((SIG[A-Z]+)\)/i)
+        ?? firstCapture(details, /Fatal signal\s+\d+\s+\((SIG[A-Z]+)\)/i);
+      const abortMessage = firstCapture(details, /Abort message:\s*['"]?(.+?)['"]?\s*$/i);
+      const confidence = Math.max(86, confidenceFromEvidence(nativeAnchors.length, 82, 2));
+      findings.push(withEvidenceStrength({
+        id: stableFindingId(this.category, `native:${process ?? ''}:${signal ?? ''}:${abortMessage ?? ''}`),
         category: this.category,
         severity: 'critical',
-        title: 'Native process crash evidence detected',
-        summary: 'Native fatal-signal or tombstone-style records were found and may require symbolized stack analysis.',
-        confidence: confidenceFromEvidence(nativeCrashes.length, 82, 3),
-        evidence: nativeCrashes.map(toEvidence),
+        title: process ? `Native crash in ${process}${signal ? ` (${signal})` : ''}` : 'Native crash / tombstone evidence detected',
+        summary: abortMessage
+          ? `Abort message: ${abortMessage.slice(0, 240)}. Tombstones provide the crash thread, all-thread backtraces, registers, memory map, and BuildId context needed for symbol-aware diagnosis.`
+          : 'Native fatal-signal or tombstone evidence is present. Signal, fault address, abort message, BuildId, and the crashing-thread backtrace are the primary fields to preserve.',
+        confidence,
+        evidence: uniqueEvidence(details.length ? details : nativeAnchors, 16),
         relatedFindingIds: [],
         recommendedChecks: [
-          'Identify the crashed process, signal, fault address, and abort message.',
-          'Use matching symbols for the exact build when native addresses need symbolization.',
-          'Correlate HAL or vendor process crashes with framework service failures.',
+          'Record the process, crashing tid, signal/code, fault address, abort message, ABI, and BuildId.',
+          'Symbolize against unstripped binaries from the exact build; mismatched symbols can produce misleading stacks.',
+          'For SIGABRT, inspect fatal logs immediately before the abort. For SIGSEGV/SIGBUS, inspect the fault address and first non-libc frames.',
         ],
-        tags: ['native', 'tombstone', 'fatal-signal'],
-      });
+        tags: ['native', 'tombstone', signal ?? 'fatal-signal'],
+      }));
     }
 
     return findings;
