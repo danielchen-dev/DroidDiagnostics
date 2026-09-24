@@ -26,12 +26,13 @@ export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<Metrics>(emptyMetrics);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState('24h');
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/admin/metrics', { credentials: 'same-origin' });
+      const response = await fetch(`/api/admin/metrics?range=${range}`, { credentials: 'same-origin' });
       if (response.status === 401) {
         setAuthenticated(false);
         return;
@@ -47,7 +48,7 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [range]);
 
   const login = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -93,8 +94,8 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <div className="admin-toolbar">
-        <div><span className="kicker">Last 24 hours</span><h1>DroidDiagnostics Admin</h1></div>
-        <div className="admin-actions"><button className="button" type="button" onClick={() => void load()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</button><button className="button" type="button" onClick={() => void logout()}>Logout</button></div>
+        <div><span className="kicker">Analytics Window</span><h1>DroidDiagnostics Admin</h1></div>
+        <div className="admin-actions"><div className="range-control" role="group" aria-label="Analytics window"><button type="button" className={range === "24h" ? "active" : ""} onClick={() => setRange("24h")}>24H</button><button type="button" className={range === "7d" ? "active" : ""} onClick={() => setRange("7d")}>7D</button><button type="button" className={range === "30d" ? "active" : ""} onClick={() => setRange("30d")}>30D</button></div><button className="button" type="button" onClick={() => void load()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</button><button className="button" type="button" onClick={() => void logout()}>Logout</button></div>
       </div>
       {error && <div className="analysis-error">{error}</div>}
       {metrics.warning && <div className="analysis-warning">{metrics.warning}</div>}

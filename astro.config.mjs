@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 
-const site = process.env.SITE_URL ?? 'https://droiddiagnostics.example.com';
+const site = process.env.SITE_URL ?? 'https://droiddiagnostics.danielchen-dev.workers.dev/';
 
 export default defineConfig({
   site,

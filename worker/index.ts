@@ -222,6 +222,8 @@ async function handleAdminMetrics(request: Request, env: Env): Promise<Response>
   if (!(await verifyAdminSession(token, env.ADMIN_SESSION_SECRET))) return json({ ok: false }, { status: 401 });
 
   const dataset = safeDataset(env.ANALYTICS_DATASET || 'droiddiagnostics_events');
+  const range = new URL(request.url).searchParams.get('range') || '24h';
+  const interval = range === '30d' ? '30' : range === '7d' ? '7' : '1';
   let warning = '';
   let summary = { pageViews: 0, visitors: 0, sessions: 0, networks: 0 };
   let events: Array<{ event: string; total: number }> = [];
@@ -232,12 +234,12 @@ async function handleAdminMetrics(request: Request, env: Env): Promise<Response>
 
   try {
     const [summaryRows, eventRows, pageRows, countryRows, referrerRows, findingRows] = await Promise.all([
-      queryAnalytics(env, `SELECT count() AS page_views, count(DISTINCT index1) AS visitors, count(DISTINCT blob3) AS sessions, count(DISTINCT blob7) AS networks FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 = 'page_view'`),
-      queryAnalytics(env, `SELECT blob1 AS event, count() AS total FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 IN ('analysis_started','analysis_completed','analysis_failed','report_exported','cta_clicked','contact_started','contact_submitted') GROUP BY event ORDER BY total DESC`),
-      queryAnalytics(env, `SELECT blob2 AS path, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 = 'page_view' GROUP BY path ORDER BY views DESC LIMIT 10`),
-      queryAnalytics(env, `SELECT blob5 AS country, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 = 'page_view' GROUP BY country ORDER BY views DESC LIMIT 10`),
-      queryAnalytics(env, `SELECT blob4 AS referrer, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 = 'page_view' GROUP BY referrer ORDER BY views DESC LIMIT 10`),
-      queryAnalytics(env, `SELECT blob6 AS category, count() AS total FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '1' DAY AND blob1 LIKE 'finding_%' GROUP BY category ORDER BY total DESC`),
+      queryAnalytics(env, `SELECT count() AS page_views, count(DISTINCT index1) AS visitors, count(DISTINCT blob3) AS sessions, count(DISTINCT blob7) AS networks FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 = 'page_view'`),
+      queryAnalytics(env, `SELECT blob1 AS event, count() AS total FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 IN ('analysis_started','analysis_completed','analysis_failed','report_exported','cta_clicked','contact_started','contact_submitted') GROUP BY event ORDER BY total DESC`),
+      queryAnalytics(env, `SELECT blob2 AS path, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 = 'page_view' GROUP BY path ORDER BY views DESC LIMIT 10`),
+      queryAnalytics(env, `SELECT blob5 AS country, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 = 'page_view' GROUP BY country ORDER BY views DESC LIMIT 10`),
+      queryAnalytics(env, `SELECT blob4 AS referrer, count() AS views FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 = 'page_view' GROUP BY referrer ORDER BY views DESC LIMIT 10`),
+      queryAnalytics(env, `SELECT blob6 AS category, count() AS total FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${interval}' DAY AND blob1 LIKE 'finding_%' GROUP BY category ORDER BY total DESC`),
     ]);
     const row = summaryRows[0] ?? {};
     summary = { pageViews: asNumber(row.page_views), visitors: asNumber(row.visitors), sessions: asNumber(row.sessions), networks: asNumber(row.networks) };
@@ -258,7 +260,7 @@ async function handleAdminMetrics(request: Request, env: Env): Promise<Response>
     warning = warning || 'D1 contact storage is not configured yet.';
   }
 
-  return json({ configured: !warning, range: '24h', summary, events, topPages, countries, referrers, findings, contacts, warning: warning || undefined });
+  return json({ configured: !warning, range, summary, events, topPages, countries, referrers, findings, contacts, warning: warning || undefined });
 }
 
 async function handleApi(request: Request, env: Env): Promise<Response> {

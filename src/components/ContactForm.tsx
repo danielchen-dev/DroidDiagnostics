@@ -10,7 +10,8 @@ export default function ContactForm({ turnstileSiteKey = '' }: { turnstileSiteKe
     setState('sending');
     setMessage('');
     void track('contact_started');
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = {
       email: String(form.get('email') ?? ''),
       company: String(form.get('company') ?? ''),
@@ -31,7 +32,7 @@ export default function ContactForm({ turnstileSiteKey = '' }: { turnstileSiteKe
       if (!response.ok || !data.ok) throw new Error(data.error ?? 'Could not submit the request.');
       setState('sent');
       setMessage('Your request was received. Keep the original diagnostic archive available for follow-up analysis.');
-      event.currentTarget.reset();
+      formElement.reset();
       void track('contact_submitted');
     } catch (error) {
       setState('error');
